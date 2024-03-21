@@ -24,7 +24,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         let median;
 
         if (request.data.length < 1) {
-            median = "05";
+            median = "5";
         } else {
             // Pretvaranje vremena u minute
             const timeToMinutes = request.data.map(time => {
@@ -36,11 +36,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             const average = sum / timeToMinutes.length;
             const averageHours = Math.floor(average / 60);
             const averageMinutes = Math.round(average % 60);
-            const averageTime = averageHours + ':' + (averageMinutes < 10 ? '0' : '') + averageMinutes;
-            console.log("Average time: ", averageTime)
+            const averageTime = averageHours === 0 ? (averageMinutes < 10 ? '0' : '') + averageMinutes : (averageHours + ':') + (averageMinutes < 10 ? '0' : '') + averageMinutes;
+
             // Sortirajte niz vrijednosti
             const sortedData = timeToMinutes.sort((a, b) => a - b);
-            console.log("Sorted elements:", sortedData);
 
             const length = sortedData.length;
             if (length % 2 === 0) {
@@ -56,7 +55,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             // Pretvaranje medijana u format vremena
             const medianHours = Math.floor(median / 60);
             const medianMinutes = Math.round(median % 60);
-            median = medianHours + ':' + (medianMinutes < 10 ? '0' : '') + medianMinutes;
+            median = medianHours === 0 ? (medianMinutes < 10 ? '0' : '') + medianMinutes : (medianHours + ':') + (medianMinutes < 10 ? '0' : '') + medianMinutes;
+
         }
         /* else{
         } */
