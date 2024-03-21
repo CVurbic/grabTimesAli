@@ -98,7 +98,7 @@ async function sendMedianSupa(median) {
                             console.error('Error creating new record:', response.statusText);
                             throw new Error('Network response was not ok');
                         }
-                        return response.json();
+                        return response;
                     })
                     .then(data => {
                         console.log('New record created successfully:', data);
