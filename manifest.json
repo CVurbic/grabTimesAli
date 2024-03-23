@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "Time Fetcher",
+    "name": "Ali'sTimer",
     "version": "1.0",
     "permissions": [
         "activeTab",
@@ -21,10 +21,14 @@
             ]
         }
     ],
+    "icons": {
+        "128": "./images/AlisTimerLogo128x128.png"
+    },
     "action": {
         "default_popup": "popup.html",
         "default_icon": {
-            "16": "icon16.png"
+            "16": "./images/AlisTimerLogo16x16.png",
+            "32": "./images/AlisTimerLogo32x32.png"
         }
     }
 }

@@ -1,0 +1,74 @@
+/* Ovdje možete prilagoditi izgled tipki prema vašim preferencijama */
+/* styles.css */
+body {
+    width: 500px;
+}
+
+h1 {
+    text-align: center;
+}
+
+html {
+    margin: 0;
+    padding: 0;
+
+    background-color: #dac9b9;
+    box-shadow: inset 0 0 100px rgba(255, 255, 255, 0.9);
+    background-image: url("https://www.transparenttextures.com/patterns/light-wool.png");
+}
+
+#locationButtons {
+    max-height: 250px;
+    overflow-y: auto;
+
+}
+
+.location-button {
+    display: inline-block;
+    margin: 5px;
+    padding: 10px 20px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    text-transform: capitalize;
+}
+
+.location-button:hover {
+
+    background-color: rgba(240, 240, 240, .5);
+}
+
+.selected-location {
+    background-color: rgba(88, 41, 35, 1);
+    color: #fff;
+}
+
+.selected-location:hover {
+    background-color: rgba(88, 41, 35, 0.9);
+
+}
+
+.popup-container {
+    display: grid;
+    align-items: center;
+    grid-template-columns: auto 1fr;
+    gap: 20px;
+    margin-bottom: 5px;
+}
+
+#changeLocationButton {
+
+    margin: 5px;
+    padding: 10px 20px;
+    background-color: rgba(88, 41, 35, 1);
+    border-radius: 0.25rem;
+    color: #fff;
+    border: 1px solid #ccc;
+    width: 75%;
+    cursor: pointer;
+}
+
+#changeLocationButton:hover {
+    background-color: rgba(88, 41, 35, 0.9);
+}
