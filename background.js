@@ -1,149 +1,139 @@
 /* background.js */
 
-const poslovnica = "langov"
-
+let poslovnica = "CCOE";
 const supabaseUrl = 'https://xxqeupvmmmxltbtxcgvp.supabase.co/rest/v1';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4cWV1cHZtbW14bHRidHhjZ3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE2Njk1Nzk3MDYsImV4cCI6MTk4NTE1NTcwNn0.Pump9exBhsc1TbUGqegEsqIXnmsmlUZMVlo2gSHoYDo';
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log('Extension Installed');
-    chrome.storage.local.set({ intervalId: setInterval(fetchElement, 5000) });
+
+    fetchLokali(supabaseUrl, supabaseKey)
+        .then(lokali => {
+            chrome.storage.local.set({ poslovnica: poslovnica, lokali: lokali }, function () {
+                if (chrome.runtime.lastError) {
+                    console.error(chrome.runtime.lastError.message);
+                } else {
+                    console.log('Data successfully saved in local storage:', { poslovnica: poslovnica, supabaseUrl: supabaseUrl, supabaseKey: supabaseKey, lokali: lokali });
+                    chrome.storage.local.get(['poslovnica', 'supabaseUrl', 'supabaseKey'], function (data) {
+                        const selectedLocation = data.poslovnica || 'CCOE';
+                        chrome.runtime.sendMessage({ action: 'sendCurrentLocation', poslovnica: selectedLocation }, function (response) {
+                            if (chrome.runtime.lastError) {
+                                console.error(chrome.runtime.lastError.message);
+                            } else {
+                                console.log('Current location sent to popup.js:', selectedLocation);
+                            }
+                        });
+                    });
+                    chrome.storage.local.set({ intervalId: setInterval(fetchElement, 5000) });
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching locations:', error);
+        });
 });
 
-chrome.runtime.onMessageExternal.addListener(function (message, sender, sendResponse) {
-    if (message.action === "fetchElement") {
-        console.log("Content script requested to fetch element");
-        fetchElement();
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (request.action === "updateLocation") {
+        const selectedLocation = request.poslovnica;
+        poslovnica = selectedLocation;
     }
 });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-
     if (request.action === "elementsExtracted") {
-        console.log("Extracted elements:", request.data);
-        let median;
+        let median = "5"; // Default median value if no data is available
 
-        if (request.data.length < 1) {
-            median = "5";
-        } else {
-            // Pretvaranje vremena u minute
+        if (request.data.length > 0) {
             const timeToMinutes = request.data.map(time => {
                 const [hours, minutes, seconds] = time.split(':').map(Number);
                 return (hours * 60) + minutes + (seconds / 60);
             });
-
-            const sum = timeToMinutes.reduce((acc, curr) => acc + curr, 0);
-            const average = sum / timeToMinutes.length;
-            const averageHours = Math.floor(average / 60);
-            const averageMinutes = Math.round(average % 60);
-            const averageTime = averageHours === 0 ? (averageMinutes < 10 ? '0' : '') + averageMinutes : (averageHours + ':') + (averageMinutes < 10 ? '0' : '') + averageMinutes;
-
-            // Sortirajte niz vrijednosti
             const sortedData = timeToMinutes.sort((a, b) => a - b);
-
-            const length = sortedData.length;
-            if (length % 2 === 0) {
-                // Ako je broj elemenata paran, izračunajte aritmetičku sredinu dviju srednjih vrijednosti
-                const middleIndex = length / 2;
-                median = (sortedData[middleIndex - 1] + sortedData[middleIndex]) / 2;
-            } else {
-                // Ako je broj elemenata neparan, medijan je srednja vrijednost niza
-                const middleIndex = Math.floor(length / 2);
-                median = sortedData[middleIndex];
-            }
-
-            // Pretvaranje medijana u format vremena
+            const middleIndex = Math.floor(sortedData.length / 2);
+            median = sortedData.length % 2 === 0 ? (sortedData[middleIndex - 1] + sortedData[middleIndex]) / 2 : sortedData[middleIndex];
             const medianHours = Math.floor(median / 60);
             const medianMinutes = Math.round(median % 60);
             median = medianHours === 0 ? (medianMinutes < 10 ? '0' : '') + medianMinutes : (medianHours + ':') + (medianMinutes < 10 ? '0' : '') + medianMinutes;
-
         }
-        /* else{
-        } */
 
         console.log("Median:", median);
-        sendMedianSupa(median)
+        sendMedianSupa(median);
     }
 });
 
+async function fetchLokali(url, key) {
+    const response = await fetch(`${url}/lokacije`, {
+        method: 'GET',
+        headers: {
+            'apikey': key,
+            'Authorization': `Bearer ${key}`,
+        },
+    });
+    if (!response.ok) {
+        throw new Error('Unable to fetch locations from Supabase');
+    }
+    return await response.json();
+}
+
 async function sendMedianSupa(median) {
-    fetch(`${supabaseUrl}/waitTime?poslovnica=eq.${poslovnica}`, {
+    console.log("Poslovnica: ", poslovnica);
+    const response = await fetch(`${supabaseUrl}/waitTime?poslovnica=eq.${poslovnica}`, {
         method: 'GET',
         headers: {
             'apikey': supabaseKey,
             'Authorization': `Bearer ${supabaseKey}`,
         },
-    })
-        .then(response => {
+    });
+    if (!response.ok) {
+        console.error('Error fetching data:', response.statusText);
+        throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    if (data.length === 0) {
+        try {
+            const response = await fetch(`${supabaseUrl}/waitTime`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseKey,
+                    'Authorization': `Bearer ${supabaseKey}`,
+                },
+                body: JSON.stringify({ wait_time: median, poslovnica: poslovnica }),
+            });
             if (!response.ok) {
-                console.error('Error fetching data:', response.statusText);
+                console.error('Error creating new record:', response.statusText);
                 throw new Error('Network response was not ok');
             }
-            return response.json();
-        })
-        .then(data => {
-            if (data.length === 0) {
-                // Ako nema podataka za određenu poslovnicu, stvorite novi redak koristeći metodu POST
-                fetch(`${supabaseUrl}/waitTime`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': supabaseKey,
-                        'Authorization': `Bearer ${supabaseKey}`,
-                    },
-                    body: JSON.stringify({ wait_time: median, poslovnica: poslovnica }),
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            console.error('Error creating new record:', response.statusText);
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('New record created successfully:', data);
-                    })
-                    .catch(error => {
-                        console.error('Error creating new record:', error);
-                    });
-            } else {
-                // Ako postoje podaci za određenu poslovnicu, ažurirajte postojeći zapis koristeći metodu PATCH
-                const recordId = data[0].id; // Pretpostavljamo da je ID prvi element u rezultatu
-                fetch(`${supabaseUrl}/waitTime?id=eq.${recordId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': supabaseKey,
-                        'Authorization': `Bearer ${supabaseKey}`,
-                    },
-                    body: JSON.stringify({ wait_time: median }),
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            console.error('Error updating record:', response.statusText);
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Record updated successfully:', data);
-                    })
-                    .catch(error => {
-                        console.error('Error updating record:', error);
-                    });
+            const newData = await response.json();
+            console.log('New record created successfully:', newData);
+        } catch (error) {
+            console.error('Error creating new record:', error);
+        }
+    } else {
+        const recordId = data[0].id;
+        try {
+            const response = await fetch(`${supabaseUrl}/waitTime?id=eq.${recordId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseKey,
+                    'Authorization': `Bearer ${supabaseKey}`,
+                },
+                body: JSON.stringify({ wait_time: median }),
+            });
+            if (!response.ok) {
+                console.error('Error updating record:', response.statusText);
+                throw new Error('Network response was not ok');
             }
-        })
-        .catch(error => {
-            console.error('Error fetching data:', error);
-        });
+        } catch (error) {
+            console.error('Error updating record:', error);
+        }
+    }
 }
-
-
-
 
 function fetchElement() {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, { action: "fetchElement" });
     });
 }
-

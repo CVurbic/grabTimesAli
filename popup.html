@@ -2,11 +2,17 @@
 <html>
     <head>
         <title>Time Fetcher</title>
+        <link rel="stylesheet" type="text/css" href="styles.css">
         <script src="popup.js"></script>
     </head>
     <body>
-        <h1>Fetched Times:</h1>
-        <ul id="timesList">
-        </ul>
+        <h1>Odaberi lokaciju:</h1>
+        <div class="popup-container">
+            <div id="locationButtons">
+                <!-- Ovdje se generiraju dinamički location-buttons -->
+            </div>
+            <img src="./images/AlisTimerLogo.svg" alt="logo" width="150" height="150">
+        </div>
+        <button id="changeLocationButton">Change</button>
     </body>
 </html>
