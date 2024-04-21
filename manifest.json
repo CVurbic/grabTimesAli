@@ -133,12 +133,30 @@ async function sendMedianSupa(median) {
     }
 }
 
-function fetchElement() {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: "fetchElement" });
-    });
+
+let targetUrl = "192.168.85.20:8887/www/ExpediterDisplay.html?id=18"; // Zamijenite ovim URL-om ciljane stranice
+let intervalId = null;
+
+chrome.runtime.onInstalled.addListener(function() {
+    startMonitoring();
+});
+
+function startMonitoring() {
+    intervalId = setInterval(function() {
+        chrome.tabs.query({ url: targetUrl }, function(tabs) {
+            if (tabs.length > 0) {
+                // Pronađen je tab koji odgovara ciljanom URL-u
+                const tabId = tabs[0].id;
+                chrome.tabs.sendMessage(tabId, { action: "fetchElement" }, function(response) {
+                    if (chrome.runtime.lastError) {
+                        console.error(chrome.runtime.lastError.message);
+                    }
+                });
+            }
+        });
+    }, 5000); // Provjeravaj svakih 5 sekundi
 }
 
-chrome.runtime.onSuspend.addListener(() => {
+chrome.runtime.onSuspend.addListener(function() {
     clearInterval(intervalId);
 });
