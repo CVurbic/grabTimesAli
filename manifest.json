@@ -13,7 +13,9 @@
     },
     "content_scripts": [
         {
-            "matches": [
+			  "matches": [
+                "http://192.168.85.20:8887/*",
+                "https://192.168.85.20:8887/*",
                 "<all_urls>"
             ],
             "js": [
